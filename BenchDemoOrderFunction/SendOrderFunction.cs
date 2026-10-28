@@ -127,16 +127,13 @@ public class SendOrderFunction
                 order.OrderId);
 
             return new ObjectResult(new
-        {
+            {
                 message = "An unexpected error occurred."
             })
             {
                 StatusCode = StatusCodes.Status500InternalServerError
             };
-            }
-        };
-
-        return new OkObjectResult(response);
+        }
     }
 
     public static Order CreateOrder(CreateOrderRequest request)
@@ -154,4 +151,3 @@ public class SendOrderFunction
         };
     }
 }
-
