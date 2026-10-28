@@ -5,6 +5,8 @@ using Microsoft.Extensions.Logging;
 using System.Xml.Serialization;
 using Azure.Messaging.ServiceBus;
 using Azure.Identity;
+using BenchDemoOrderFunction.Model;
+using System.Text.Json;
 
 namespace BenchDemoOrderFunction;
 
@@ -29,26 +31,68 @@ public class SendOrderFunction
             return new StatusCodeResult(StatusCodes.Status500InternalServerError);
         }
 
-        var connectionString = Environment.GetEnvironmentVariable("ServiceBusConnectionString");
+        var connectionString = Environment.GetEnvironmentVariable("ServiceBusConnection");
 
         var client = new ServiceBusClient(connectionString,
             new ServiceBusClientOptions { TransportType = ServiceBusTransportType.AmqpWebSockets});
 
         var sender = client.CreateSender("orders-queue");
 
+        var orderJson = "";
         try
         {
             using var reader = new StreamReader(req.Body);
-            var orderJson = await reader.ReadToEndAsync();
-            var message = new ServiceBusMessage(orderJson);
-            await sender.SendMessageAsync(message);
+            orderJson = await reader.ReadToEndAsync();
+
+            var request = JsonSerializer.Deserialize<CreateOrderRequest>(orderJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (request == null)
+            {
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+            }
+
+
+            Order order = CreateOrder(request);
+
+            string m = JsonSerializer.Serialize(order);
+            var messageBody = new ServiceBusMessage(m) { ContentType = "application/json" };
+            orderJson = m;
+
+            await sender.SendMessageAsync(messageBody);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             _logger.LogError(e.Message);
             return new StatusCodeResult(StatusCodes.Status500InternalServerError);
         }
 
-        return new OkResult();
+        var response = new
+        {
+            message = "success",
+            status = 200,
+            data = new
+            {
+                messageBody = orderJson
+            }
+        };
+
+        return new OkObjectResult(response);
     }
+
+    public static Order CreateOrder(CreateOrderRequest request)
+    {
+        return new Order
+        {
+            OrderId = Guid.NewGuid(),
+            CustomerId = request.CustomerId,
+            ProductId = request.ProductId,
+            Quantity = request.Quantity,
+            Status = request.Status,
+            OrderDate = DateTime.UtcNow,
+            EmailAddress = request.EmailAddress,
+            ProductPrice = request.ProductPrice
+        };
+    }
+
 }
+
