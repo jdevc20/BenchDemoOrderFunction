@@ -90,7 +90,8 @@ public class SendOrderFunction
             return new ObjectResult(new
             {
                 message = "Order submitted successfully.",
-                data = order
+                data = order,
+                totalPrice = order.Quantity * order.ProductPrice
             })
             {
                 StatusCode = StatusCodes.Status201Created
