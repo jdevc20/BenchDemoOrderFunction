@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Text;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace BenchDemoOrderFunction.Model
 {
@@ -15,7 +12,7 @@ namespace BenchDemoOrderFunction.Model
         public Guid? ProductId { get; set; }
 
         [Required]
-        [Range(1,1000)]
+        [Range(1, 1000)]
         public int? Quantity { get; set; }
 
         [Required]
